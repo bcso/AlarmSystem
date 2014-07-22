@@ -1,11 +1,12 @@
-int sensorValSwitch = 0;
-int debugLight = 5;
+const int speaker_pin = 8; 
+const int sensorValSwitch = 0;
+const int debugLight = 5;
 int passCode [] = {1,1,2,3};
 int userGuess[4];
 int digitCounter = 0; //Counter to keep track of how many input digits have been inputted
 int sensorVal;
 long currTime;
-volatile int state=LOW;
+volatile int state = LOW;
 float trip_duration = 0;
 float start_time = 0;
 boolean alarm_deactivated = false;
@@ -17,38 +18,54 @@ void setup(){
 	attachInterrupt(0,button_press,CHANGE);	
 
 	pinMode(debugLight, OUTPUT);
+	pinMode(speaker_pin, OUTPUT);
 	Serial.begin(9600);		
 }
 
-void loop(){
-	//start_count = true;
+void loop(){	
 	start_time = millis();
 	trip_duration = 0;
 	alarm_deactivated = false;
-	Serial.print("Waiting for push...: ");
+	Serial.print("Alarm deactivated...: ");
 	Serial.print("State: ");
 	Serial.print(state);
-	Serial.print(" alarm_: ");
+	Serial.print(" alarm_deactivated: ");
 	Serial.print(alarm_deactivated);
 	Serial.print(" trip dur: ");
 	Serial.println(trip_duration);
+
+	//Loop me when sensor is tripped
 	while((state == HIGH) && (alarm_deactivated == false)){
-		Serial.print("pushed! ");
-		/*if (start_count == true){
-		  start_time = millis();
-		  start_count = false;
-		}*/
+		Serial.print("Sensor tripped... checking for false alarm... ");
+		Serial.print("State: ");
+		Serial.print(state);
+		Serial.print(" alarm_deactivated: ");
+		Serial.print(alarm_deactivated);
+		Serial.print(" trip dur: ");
+		Serial.println(trip_duration);
 		trip_duration = millis() - start_time;
-		if(trip_duration > 2000){
+
+		//Loop me until the user enters the right code (alarm_deactivated will be true)
+		while ((trip_duration > 2000) && (alarm_deactivated == false)){
+
 		    //trigger alarm		    
-		    Serial.println("Alarm has been tripped");
+		    tone(speaker_pin,500);
+		    Serial.println("Alarm has been tripped! Enter the code!");
+
 			//Return boolean result after all testing.
 			alarm_deactivated = runCheck(); 
-			//Pretty print statments and run me again! (Can ommit this)
-			if (alarm_deactivated != false){
+
+			//Pretty print statments and run me again!
+			if (alarm_deactivated == true){
+
 				Serial.println("Yay got it!");
+				//Shut off the alarm
+				noTone(speaker_pin);
+				// Exit parent while loop
+				state = LOW; 
 			}
 			else if (alarm_deactivated == false){
+				
 				Serial.print("Expected: ");
 				printArray(passCode);		
 				Serial.print("Got: ");
@@ -56,15 +73,13 @@ void loop(){
 				Serial.println("Try again!");	
 			}			  
 		}
-	}
-
-	digitCounter = 0;
+	}	
 }
 
 //Run the combination accepting and checking
-boolean runCheck(){
-	// Serial.println("Running Check...");
-	while(digitCounter != 4){		
+boolean runCheck(){	
+	digitCounter = 0; //Setup for user guess
+	while(digitCounter != 4){
 		sensorVal = analogRead(sensorValSwitch);
 		//Check if sensor val (analog input) is not from interference.
 		if ((sensorVal > 150) ){
@@ -88,9 +103,9 @@ void printArray(int array[]){
 //Run a check on the userGuess to see if it is same as predefined key combination
 boolean checkMatchResult(){
 	boolean digitCheck = true;
-	for (int i = 0; i<4; i++){
+	for (int i = 0; i<4; i++){ //Check each value in the array for a mismatch
 		if (passCode[i] != userGuess[i]){
-			digitCheck = false;
+			digitCheck = false; //Mismatch!
 		}
 	}
 	return digitCheck;
@@ -108,7 +123,7 @@ void resetSensor(){
 
 void matchSensorVal(int sensorVal){
 	Serial.println("Matching Value...");
-	Serial.println(sensorVal);
+	// Serial.println(sensorVal);
 		if ((sensorVal >= 987) && (sensorVal <= 996)){
 			userGuess[digitCounter] = 0;
 		}
@@ -149,16 +164,17 @@ void matchSensorVal(int sensorVal){
 			userGuess[digitCounter] = 9;
 		}		
 
-		Serial.print("User guess is: ");
-		Serial.print(userGuess[digitCounter]);
-		Serial.print(" at sensorVal: ");
-		Serial.println(sensorVal);
-		Serial.println(digitCounter);
+		Serial.print("User guess number ");
+		Serial.print(digitCounter);
+		Serial.print("is: ");
+		Serial.println(userGuess[digitCounter]);
+		// Serial.print(" at sensorVal: ");
+		// Serial.println(sensorVal);
+		
 		digitCounter ++; //Increment digit guess				
 }
 
 // interrupt handler function 
 void button_press(){
-state = !state;
+	state = !state;
 }
-
