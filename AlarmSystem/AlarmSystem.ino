@@ -5,28 +5,59 @@ int userGuess[4];
 int digitCounter = 0; //Counter to keep track of how many input digits have been inputted
 int sensorVal;
 long currTime;
+volatile int state=LOW;
+float trip_duration = 0;
+float start_time = 0;
+boolean alarm_deactivated = false;
 
+void setup(){
+	// parameter1 - interrupt (0 or 1)
+	// parameter2 - name of the interrupt handler function 
+	// parameter3 - trigger(CHANGE,LOW,RISING or FALLING)
+	attachInterrupt(0,button_press,CHANGE);	
 
-void setup(){		
 	pinMode(debugLight, OUTPUT);
-	Serial.begin(9600);
+	Serial.begin(9600);		
 }
 
 void loop(){
-	//Return boolean result after all testing.
-	boolean result = runCheck();
-
-	//Pretty print statments and run me again! (Can ommit this)
-	if (result != false){
-		Serial.println("Yay got it!");
+	//start_count = true;
+	start_time = millis();
+	trip_duration = 0;
+	alarm_deactivated = false;
+	Serial.print("Waiting for push...: ");
+	Serial.print("State: ");
+	Serial.print(state);
+	Serial.print(" alarm_: ");
+	Serial.print(alarm_deactivated);
+	Serial.print(" trip dur: ");
+	Serial.println(trip_duration);
+	while((state == HIGH) && (alarm_deactivated == false)){
+		Serial.print("pushed! ");
+		/*if (start_count == true){
+		  start_time = millis();
+		  start_count = false;
+		}*/
+		trip_duration = millis() - start_time;
+		if(trip_duration > 2000){
+		    //trigger alarm		    
+		    Serial.println("Alarm has been tripped");
+			//Return boolean result after all testing.
+			alarm_deactivated = runCheck(); 
+			//Pretty print statments and run me again! (Can ommit this)
+			if (alarm_deactivated != false){
+				Serial.println("Yay got it!");
+			}
+			else if (alarm_deactivated == false){
+				Serial.print("Expected: ");
+				printArray(passCode);		
+				Serial.print("Got: ");
+				printArray(userGuess);		
+				Serial.println("Try again!");	
+			}			  
+		}
 	}
-	else if (result == false){
-		Serial.print("Expected: ");
-		printArray(passCode);		
-		Serial.print("Got: ");
-		printArray(userGuess);		
-		Serial.println("Try again!");	
-	}	
+
 	digitCounter = 0;
 }
 
@@ -77,7 +108,7 @@ void resetSensor(){
 
 void matchSensorVal(int sensorVal){
 	Serial.println("Matching Value...");
-Serial.println(sensorVal);
+	Serial.println(sensorVal);
 		if ((sensorVal >= 987) && (sensorVal <= 996)){
 			userGuess[digitCounter] = 0;
 		}
@@ -126,6 +157,8 @@ Serial.println(sensorVal);
 		digitCounter ++; //Increment digit guess				
 }
 
-
-
+// interrupt handler function 
+void button_press(){
+state = !state;
+}
 
