@@ -1,4 +1,4 @@
-const int speaker_pin = 8; 
+const int speaker_pin = 10; 
 const int sensorValSwitch = 0;
 const int debugLight = 5;
 int passCode [] = {1,1,2,3};
@@ -7,6 +7,8 @@ int digitCounter = 0; //Counter to keep track of how many input digits have been
 int sensorVal;
 long currTime;
 volatile int state = LOW;
+volatile int sensor_state[4];
+int sensor_pin[] = {6,7,8,9};
 float trip_duration = 0;
 float start_time = 0;
 boolean alarm_deactivated = false;
@@ -15,8 +17,12 @@ void setup(){
 	// parameter1 - interrupt (0 or 1)
 	// parameter2 - name of the interrupt handler function 
 	// parameter3 - trigger(CHANGE,LOW,RISING or FALLING)
-	attachInterrupt(0,button_press,CHANGE);	
+	attachInterrupt(0,trip,CHANGE);	
 
+	pinMode(sensor_pin[0], INPUT);
+	pinMode(sensor_pin[1], INPUT);
+	pinMode(sensor_pin[2], INPUT);
+	pinMode(sensor_pin[3], INPUT);
 	pinMode(debugLight, OUTPUT);
 	pinMode(speaker_pin, OUTPUT);
 	Serial.begin(9600);		
@@ -33,10 +39,26 @@ void loop(){
 	Serial.print(alarm_deactivated);
 	Serial.print(" trip dur: ");
 	Serial.println(trip_duration);
+    for (int i = 0; i <=3; i++){
+      sensor_state[i] = 0;           
+    }
 
 	//Loop me when sensor is tripped
-	while((state == HIGH) && (alarm_deactivated == false)){
-		Serial.print("Sensor tripped... checking for false alarm... ");
+	while( 
+			(state == HIGH) &&				
+			(alarm_deactivated == false)
+			//&& ((sensor_state[0] != 0) ||(sensor_state[1] != 0) ||(sensor_state[2] != 0) || (sensor_state[3] != 0))			
+			) {
+		Serial.print("Sensor tripped at pin... ");
+	    for (int i = 0; i <4; i++){
+	      // if (sensor_state[i] == 1){
+	      //   Serial.print(sensor_pin[i]);
+	      // }
+	      Serial.print(sensor_state[i]);
+	      Serial.print(sensor_pin[i]);
+	      Serial.print(", ");
+	    }
+	    Serial.print(" checking for false alarm... ");
 		Serial.print("State: ");
 		Serial.print(state);
 		Serial.print(" alarm_deactivated: ");
@@ -175,6 +197,14 @@ void matchSensorVal(int sensorVal){
 }
 
 // interrupt handler function 
-void button_press(){
-	state = !state;
+void trip(){	
+	state = !state;	
+	for (int i =6; i<10; i++)
+		if (digitalRead(i) == HIGH){
+			sensor_state[i-6] = 1;		
+		}
 }
+
+
+
+
