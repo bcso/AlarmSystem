@@ -1,7 +1,7 @@
 const int speaker_pin = 10; 
 const int sensorValSwitch = 0;
 const int debugLight = 5;
-int passCode [] = {0,2,4,4};
+int passCode [] = {1,1,2,3};
 int userGuess[4];
 int digitCounter = 0; //Counter to keep track of how many input digits have been inputted
 int sensorVal;
